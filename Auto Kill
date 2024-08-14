@@ -1,0 +1,137 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local isAutoFarmEnabled = false
+local xOffset = 0
+local yOffset = 0
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoFarmGui"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 200, 0, 50)
+toggleButton.Position = UDim2.new(0, 50, 0, 50)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.Text = "Enable Auto Farm"
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 14
+toggleButton.Parent = screenGui
+
+local toggleUICorner = Instance.new("UICorner")
+toggleUICorner.CornerRadius = UDim.new(0, 10)
+toggleUICorner.Parent = toggleButton
+
+local xSlider = Instance.new("TextBox")
+xSlider.Size = UDim2.new(0, 200, 0, 50)
+xSlider.Position = UDim2.new(0, 50, 0, 110)
+xSlider.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+xSlider.Text = "X Offset: " .. tostring(xOffset)
+xSlider.TextColor3 = Color3.new(1, 1, 1)
+xSlider.Font = Enum.Font.SourceSansBold
+xSlider.TextSize = 14
+xSlider.Parent = screenGui
+
+local xUICorner = Instance.new("UICorner")
+xUICorner.CornerRadius = UDim.new(0, 10)
+xUICorner.Parent = xSlider
+
+local ySlider = Instance.new("TextBox")
+ySlider.Size = UDim2.new(0, 200, 0, 50)
+ySlider.Position = UDim2.new(0, 50, 0, 170)
+ySlider.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+ySlider.Text = "Y Offset: " .. tostring(yOffset)
+ySlider.TextColor3 = Color3.new(1, 1, 1)
+ySlider.Font = Enum.Font.SourceSansBold
+ySlider.TextSize = 14
+ySlider.Parent = screenGui
+
+local yUICorner = Instance.new("UICorner")
+yUICorner.CornerRadius = UDim.new(0, 10)
+yUICorner.Parent = ySlider
+
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+
+    for _, targetPlayer in pairs(game.Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+            local targetHumanoid = targetPlayer.Character.Humanoid
+            local targetRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+            if targetHumanoid and targetRootPart and targetHumanoid.Health > 0 then
+                local distance = (humanoidRootPart.Position - targetRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = targetPlayer
+                end
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+local function stickToPlayer(targetPlayer)
+    local targetHumanoid = targetPlayer.Character:FindFirstChild("Humanoid")
+    local targetRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+    if targetHumanoid and targetRootPart then
+        while targetHumanoid.Health > 0 and isAutoFarmEnabled do
+            local behindPosition = targetRootPart.Position - (targetRootPart.CFrame.LookVector * 3) + Vector3.new(xOffset, 0, yOffset)
+
+            humanoidRootPart.CFrame = CFrame.new(behindPosition, targetRootPart.Position)
+
+            local tool = character:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Handle") then
+                tool:Activate()
+            end
+            wait(0.1)
+        end
+    end
+end
+
+local function autoFarm()
+    while isAutoFarmEnabled do
+        local closestPlayer = getClosestPlayer()
+
+        if closestPlayer then
+            stickToPlayer(closestPlayer)
+        end
+
+        wait(0.5)
+    end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    isAutoFarmEnabled = not isAutoFarmEnabled
+
+    if isAutoFarmEnabled then
+        toggleButton.Text = "Disable Auto Farm"
+        autoFarm()
+    else
+        toggleButton.Text = "Enable Auto Farm"
+    end
+end)
+
+xSlider.FocusLost:Connect(function()
+    local newValue = tonumber(xSlider.Text:match("%d+"))
+    if newValue then
+        xOffset = newValue
+        xSlider.Text = "X Offset: " .. tostring(xOffset)
+    else
+        xSlider.Text = "X Offset: " .. tostring(xOffset)
+    end
+end)
+
+ySlider.FocusLost:Connect(function()
+    local newValue = tonumber(ySlider.Text:match("%d+"))
+    if newValue then
+        yOffset = newValue
+        ySlider.Text = "Y Offset: " .. tostring(yOffset)
+    else
+        ySlider.Text = "Y Offset: " .. tostring(yOffset)
+    end
+end)
