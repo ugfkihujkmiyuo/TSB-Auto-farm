@@ -1,6 +1,7 @@
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local tweenService = game:GetService("TweenService")
 
 local isAutoFarmEnabled = false
 local xOffset = 0
@@ -8,7 +9,7 @@ local yOffset = 0
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AutoFarmGui"
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = game:GetService("CoreGui")
 
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0, 200, 0, 50)
@@ -74,6 +75,13 @@ local function getClosestPlayer()
     return closestPlayer
 end
 
+local function smoothMoveTo(targetPosition, duration)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetPosition})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
 local function stickToPlayer(targetPlayer)
     local targetHumanoid = targetPlayer.Character:FindFirstChild("Humanoid")
     local targetRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -81,14 +89,15 @@ local function stickToPlayer(targetPlayer)
     if targetHumanoid and targetRootPart then
         while targetHumanoid.Health > 0 and isAutoFarmEnabled do
             local behindPosition = targetRootPart.Position - (targetRootPart.CFrame.LookVector * 3) + Vector3.new(xOffset, 0, yOffset)
+            local newCFrame = CFrame.new(behindPosition, targetRootPart.Position)
 
-            humanoidRootPart.CFrame = CFrame.new(behindPosition, targetRootPart.Position)
+            smoothMoveTo(newCFrame, 0.2) -- Smoothly move to the calculated position
 
             local tool = character:FindFirstChildOfClass("Tool")
             if tool and tool:FindFirstChild("Handle") then
                 tool:Activate()
             end
-            wait(0.1)
+            wait(0.1) -- Adjust the delay between attacks as needed
         end
     end
 end
